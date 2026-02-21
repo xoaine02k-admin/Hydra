@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HYDRA 5.4</title>
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="header">
+    <div class="left" onclick="toggleMenu()">💠 Tổng quát</div>
+    <div class="right">
+        <b>HYDRA</b>
+        <div class="version">Phiên bản: 5.4</div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="menu" id="menu">
+<ul>
+<li onclick="menuAction(()=>loadHome())">Trang chủ</li>
+<li onclick="menuAction(()=>loadProfile())">Hồ sơ</li>
+<li onclick="menuAction(()=>loadNotify())">Thông báo</li>
+<li onclick="menuAction(()=>loadSettings())">Cài đặt</li>
+<li onclick="menuAction(()=>loadSupport())">Góp ý & báo cáo</li>
+<li onclick="closeMenu()">Đăng xuất</li>
+</ul>
+</div>
+
+<div class="content" id="contentArea"></div>
+<div id="footerContainer"></div>
+
+<script src="data/subjects.js" defer ></script>
+
+<script src="js/core.js" defer ></script>
+<script src="js/menu.js" defer ></script>
+<script src="js/chat.js" defer ></script>
+<script src="js/navigation.js" defer ></script>
+<script src="js/pages.js" defer ></script>
+<script src="js/study.js" defer ></script>
+<script src="js/notify.js" defer ></script>
+<script src="js/effects.js" defer ></script>
+<script src="js/utils.js" defer ></script>
+<script src="js/init.js" defer ></script>
+
+<script type="module">
+// Firebase core
+import { initializeApp } 
+from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+
+// Firestore (cần cho thông báo realtime)
+import { 
+  getFirestore, 
+  doc, 
+  onSnapshot 
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB6xND1Q3069MJpIxRrW6pzu8nW5k61rZk",
+    authDomain: "hydra-app-8e17c.firebaseapp.com",
+    projectId: "hydra-app-8e17c",
+    storageBucket: "hydra-app-8e17c.firebasestorage.app",
+    messagingSenderId: "1036545334651",
+    appId: "1:1036545334651:web:8dcf06affb3e62c7d131de"
+  };
+
+// Khởi tạo Firebase + Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+onSnapshot(doc(db,"global","notice"),(snap)=>{
+
+    const bar = document.getElementById("miniBar");
+    const dot = document.getElementById("notifyDot");
+    const textEl = document.querySelector(".notify-text");
+
+    if(!snap.exists()) return;
+
+    const data = snap.data();
+    if(!data.text || !data.text.trim()) return;
+
+    const serverText = data.text.trim();
+
+    // ===== CHỐNG LẶP NOTICE KHI RELOAD =====
+    const lastServerNotice = localStorage.getItem("last_notice_text");
+    if(lastServerNotice === serverText){
+        // không phải notice mới -> chỉ khôi phục UI nếu cần
+        if(localStorage.getItem("has_notice")==="1"){
+            if(bar) bar.style.display="flex";
+            if(dot) dot.classList.add("notify-on");
+            if(bar) bar.classList.add("notify-on");
+        }
+        return;
+    }
+
+    // ===== LƯU DẤU VẾT SERVER =====
+    localStorage.setItem("last_notice_text", serverText);
+
+    // ===== BẬT MINIBAR =====
+    localStorage.setItem("has_notice","1");
+
+    // ===== LƯU LỊCH SỬ NOTICE =====
+    let notices = JSON.parse(localStorage.getItem("notice_list") || "[]");
+
+const newNotice = {
+    id: Date.now(),
+    title: data.title || serverText || "Thông báo",
+    body: data.body || "",
+    time: Date.now(),
+    read:false
+};
+
+notices.unshift(newNotice);
+
+localStorage.setItem("notice_list", JSON.stringify(notices));
+localStorage.setItem("has_notice","1");
+
+    // ===== UPDATE UI =====
+    if(bar) bar.style.display="flex";
+    if(dot) dot.classList.add("notify-on");
+    if(bar) bar.classList.add("notify-on");
+
+});
+</script>
+</body>
+</html>
